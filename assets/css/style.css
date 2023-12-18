@@ -1,0 +1,30 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #00001b;
+}
+
+#search {
+    width: 80%;
+    padding: 10px;
+    margin: 20px auto;
+    display: block;
+}
+
+.populer, .games {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+}
+
+.populer img, .games img {
+    width: 200x;
+    height: 200px;
+    margin: 10px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+}
+h1{
+    color: #1bff00;
+}
