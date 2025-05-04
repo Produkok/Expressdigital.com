@@ -1,79 +1,134 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Top Up Free Fire</title>
   <style>
-    body { font-family: sans-serif; background: #f9f9f9; padding: 20px; }
-    .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    input, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 8px; border: 1px solid #ccc; }
-    button { background: #28a745; color: white; font-weight: bold; border: none; }
-    .nominal { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-    .nominal button { flex: 1 1 45%; background: #eee; border: 1px solid #ccc; color: black; }
-    .nominal button.active { background: #007bff; color: white; }
-    #qris-container { margin-top: 20px; text-align: center; }
-    #status { margin-top: 10px; font-weight: bold; text-align: center; }
+    body {
+      font-family: sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    .nominal-list button {
+      margin: 5px 4px;
+      padding: 10px;
+      border: none;
+      background: #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .nominal-list button.selected {
+      background: #007bff;
+      color: white;
+    }
+    #bayarBtn {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      background: green;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .hidden {
+      display: none;
+    }
+    img#qrisImg {
+      width: 100%;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Top Up Free Fire</h2>
-    <input id="userId" placeholder="Masukkan ID Free Fire" oninput="cekAkun()">
-    <div id="username"></div>
-    <div class="nominal" id="nominalList"></div>
-    <button onclick="bayarQRIS()">Bayar Pakai QRIS</button>
-    <div id="qris-container"></div>
-    <div id="status"></div>
+    <h1>Top Up Free Fire</h1>
+    <input type="text" id="userId" placeholder="Masukkan ID FF" oninput="cekUser()" />
+    <p id="userStatus">Menunggu ID...</p>
+
+    <div class="nominal-list">
+      <button onclick="selectNominal(22500, '80 DM')">80 DM - Rp 22.500</button>
+      <button onclick="selectNominal(28000, '100 DM')">100 DM - Rp 28.000</button>
+      <button onclick="selectNominal(41500, '150 DM')">150 DM - Rp 41.500</button>
+      <button onclick="selectNominal(55000, '200 DM')">200 DM - Rp 55.000</button>
+    </div>
+
+    <button id="bayarBtn" onclick="bayar()">Bayar Pakai QRIS</button>
+
+    <div id="qrisSection" class="hidden">
+      <p>Scan QRIS untuk membayar:</p>
+      <img id="qrisImg" src="" alt="QRIS">
+    </div>
   </div>
 
+  <!-- CryptoJS MD5 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <script>
-    const merchantId = "M250425XGOP9429XE";
-    const secretKey = "fedd3fbd4cdd2c4908c25118d1fb13afe3d0dfb255f27412dbd4139880e1ffde";
+    const merchantId = "ISI_ID_MERCHANT_MU"; // Ganti ini
+    const secretKey = "ISI_SECRET_KEY_MU"; // Ganti ini
     const gameCode = "freefire";
-    const nominal = [
-      { label: "80 DM - Rp 22.500", value: 22500 },
-      { label: "100 DM - Rp 28.000", value: 28000 },
-      { label: "150 DM - Rp 41.500", value: 41500 },
-      { label: "200 DM - Rp 55.000", value: 55000 }
-    ];
 
-    let selectedNominal = null;
-
-    // Tampilkan pilihan nominal
-    const nominalContainer = document.getElementById("nominalList");
-    nominal.forEach((item, index) => {
-      const btn = document.createElement("button");
-      btn.textContent = item.label;
-      btn.onclick = () => {
-        document.querySelectorAll(".nominal button").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        selectedNominal = item;
-      };
-      nominalContainer.appendChild(btn);
-    });
+    let hargaTerpilih = 0;
+    let nominalTerpilih = '';
+    let idValid = false;
 
     function md5(string) {
-      // Gunakan md5.js eksternal untuk generate signature atau pakai server
-      return ''; // Harus digenerate di server karena GitHub Pages tidak support md5 bawaan
+      return CryptoJS.MD5(string).toString();
     }
 
-    function cekAkun() {
+    function cekUser() {
       const userId = document.getElementById("userId").value;
       if (userId.length < 5) return;
+
       const signature = md5(merchantId + secretKey);
       fetch(`https://v1.apigames.id/merchant/${merchantId}/cek-username/${gameCode}?user_id=${userId}&signature=${signature}`)
         .then(res => res.json())
         .then(data => {
-          document.getElementById("username").textContent = data.status === 1 && data.data.is_valid ? `Username: ${data.data.username}` : "ID tidak ditemukan!";
+          const userStatus = document.getElementById("userStatus");
+          if (data.status === 1 && data.data.is_valid) {
+            idValid = true;
+            userStatus.textContent = `Username: ${data.data.username}`;
+          } else {
+            idValid = false;
+            userStatus.textContent = "ID tidak ditemukan!";
+          }
         });
     }
 
-    function bayarQRIS() {
+    function selectNominal(harga, label) {
+      hargaTerpilih = harga;
+      nominalTerpilih = label;
+      document.querySelectorAll(".nominal-list button").forEach(btn => btn.classList.remove("selected"));
+      event.target.classList.add("selected");
+    }
+
+    function bayar() {
+      if (!idValid || hargaTerpilih === 0) {
+        alert("Lengkapi data dengan benar!");
+        return;
+      }
+
+      const qrisSection = document.getElementById("qrisSection");
       const userId = document.getElementById("userId").value;
-      if (!selectedNominal || !userId) return alert("Lengkapi data terlebih dahulu!");
-      const invoice = Date.now().toString();
-      const signature = md5(merchantId + secretKey + invoice);
+      const signature = md5(merchantId + secretKey);
 
       fetch("https://v1.apigames.id/transaction", {
         method: "POST",
@@ -81,37 +136,20 @@
         body: JSON.stringify({
           merchant_id: merchantId,
           signature: signature,
-          invoice_id: invoice,
-          game_code: gameCode,
-          user_id: userId,
-          denom: selectedNominal.value,
+          product: `${gameCode}_${nominalTerpilih.replace(" DM", "")}`,
+          destination: userId,
           payment_method: "qris"
         })
       })
-        .then(res => res.json())
-        .then(data => {
-          if (data.status === 1) {
-            document.getElementById("qris-container").innerHTML = `<img src="${data.data.qr_url}" width="200">`;
-            cekStatusPembayaran(invoice);
-          } else {
-            alert("Gagal buat QRIS: " + data.message);
-          }
-        });
-    }
-
-    function cekStatusPembayaran(invoice) {
-      setInterval(() => {
-        const signature = md5(merchantId + secretKey + invoice);
-        fetch(`https://v1.apigames.id/merchant/${merchantId}/status?invoice_id=${invoice}&signature=${signature}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.status === 1 && data.data.payment_status === "success") {
-              document.getElementById("status").textContent = "Pembayaran BERHASIL!";
-            } else {
-              document.getElementById("status").textContent = "Menunggu pembayaran...";
-            }
-          });
-      }, 3000);
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 1 && data.data.qris_url) {
+          document.getElementById("qrisImg").src = data.data.qris_url;
+          qrisSection.classList.remove("hidden");
+        } else {
+          alert("Gagal generate QRIS!");
+        }
+      });
     }
   </script>
 </body>
