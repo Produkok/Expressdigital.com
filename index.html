@@ -65,10 +65,10 @@
     <p id="userStatus">Menunggu ID...</p>
 
     <div class="nominal-list">
-      <button onclick="selectNominal(22500, '80 DM')">80 DM - Rp 22.500</button>
-      <button onclick="selectNominal(28000, '100 DM')">100 DM - Rp 28.000</button>
-      <button onclick="selectNominal(41500, '150 DM')">150 DM - Rp 41.500</button>
-      <button onclick="selectNominal(55000, '200 DM')">200 DM - Rp 55.000</button>
+      <button onclick="selectNominal(22500, '80')">80 DM - Rp 22.500</button>
+      <button onclick="selectNominal(28000, '100')">100 DM - Rp 28.000</button>
+      <button onclick="selectNominal(41500, '150')">150 DM - Rp 41.500</button>
+      <button onclick="selectNominal(55000, '200')">200 DM - Rp 55.000</button>
     </div>
 
     <button id="bayarBtn" onclick="bayar()">Bayar Pakai QRIS</button>
@@ -82,12 +82,12 @@
   <!-- CryptoJS MD5 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <script>
-    const merchantId = "M250425XGOP9429XE"; // Ganti ini
-    const secretKey = "fedd3fbd4cdd2c4908c25118d1fb13afe3d0dfb255f27412dbd4139880e1ffde"; // Ganti ini
+    const merchantId = "M250425XGOP9429XE";
+    const secretKey = "fedd3fbd4cdd2c4908c25118d1fb13afe3d0dfb255f27412dbd4139880e1ffde";
     const gameCode = "freefire";
 
     let hargaTerpilih = 0;
-    let nominalTerpilih = '';
+    let jumlahDm = '';
     let idValid = false;
 
     function md5(string) {
@@ -113,9 +113,9 @@
         });
     }
 
-    function selectNominal(harga, label) {
+    function selectNominal(harga, jumlah) {
       hargaTerpilih = harga;
-      nominalTerpilih = label;
+      jumlahDm = jumlah;
       document.querySelectorAll(".nominal-list button").forEach(btn => btn.classList.remove("selected"));
       event.target.classList.add("selected");
     }
@@ -126,9 +126,9 @@
         return;
       }
 
-      const qrisSection = document.getElementById("qrisSection");
       const userId = document.getElementById("userId").value;
       const signature = md5(merchantId + secretKey);
+      const produk = `${gameCode}_${jumlahDm}`;
 
       fetch("https://v1.apigames.id/transaction", {
         method: "POST",
@@ -136,7 +136,7 @@
         body: JSON.stringify({
           merchant_id: merchantId,
           signature: signature,
-          product: `${gameCode}_${nominalTerpilih.replace(" DM", "")}`,
+          product: produk,
           destination: userId,
           payment_method: "qris"
         })
@@ -145,9 +145,9 @@
       .then(data => {
         if (data.status === 1 && data.data.qris_url) {
           document.getElementById("qrisImg").src = data.data.qris_url;
-          qrisSection.classList.remove("hidden");
+          document.getElementById("qrisSection").classList.remove("hidden");
         } else {
-          alert("Gagal generate QRIS!");
+          alert("Gagal generate QRIS! Cek produk & saldo.");
         }
       });
     }
