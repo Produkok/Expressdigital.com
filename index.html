@@ -63,73 +63,61 @@
 
     <div id="status"></div>
   </div>
+<script>
+  const merchantId = "M250425XGOP9429XE";
+  const secretKey = "fedd3fbd4cdd2c4908c25118d1fb13afe3d0dfb255f27412dbd4139880e1ffde";
 
-  <!-- LIBRARY MD5 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  const produkMap = {
+    "ff5": "FRE-FIRE5",
+    "ff12": "FRE-FIRE12",
+    "ff70": "FRE-FIRE70",
+    "ff140": "FRE-FIRE140",
+    "ff355": "FRE-FIRE355"
+  };
 
-  <script>
-    const merchantId = "M250425XGOP9429XE";
-    const secretKey = "fedd3fbd4cdd2c4908c25118d1fb13afe3d0dfb255f27412dbd4139880e1ffde";
+  function md5(input) {
+    return CryptoJS.MD5(input).toString();
+  }
 
-    function md5(input) {
-      return CryptoJS.MD5(input).toString();
-    }
+  function cekAkun() {
+    const userId = document.getElementById("user_id").value;
+    const signature = md5(merchantId + secretKey);
+    const url = `https://v1.apigames.id/merchant/${merchantId}/cek-username/freefire?user_id=${userId}&signature=${signature}`;
 
-    function cekAkun() {
-      const userId = document.getElementById("user_id").value;
-      if (!userId) return alert("Masukkan ID akun!");
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        if (data?.data?.is_valid) {
+          document.getElementById("hasil_cek").innerText = "Username: " + data.data.username;
+        } else {
+          document.getElementById("hasil_cek").innerText = "Akun tidak ditemukan!";
+        }
+      })
+      .catch(() => alert("Gagal cek akun"));
+  }
 
-      const signature = md5(merchantId + secretKey);
-      const url = `https://v1.apigames.id/merchant/${merchantId}/cek-username/freefire?user_id=${userId}&signature=${signature}`;
+  function prosesTopup() {
+    const userId = document.getElementById("user_id").value;
+    const diamond = document.getElementById("diamond").value;
+    const metode = document.getElementById("metode").value;
+    const refId = "DRAGON" + Date.now();
+    const produk = produkMap[diamond];
 
-      fetch(url)
-        .then(res => res.json())
-        .then(data => {
-          if (data?.data?.is_valid) {
-            document.getElementById("hasil_cek").innerText = "Username: " + data.data.username;
-          } else {
-            document.getElementById("hasil_cek").innerText = "Akun tidak ditemukan!";
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          alert("Gagal cek akun!");
-        });
-    }
+    const signature = md5(`${merchantId}:${secretKey}:${refId}`);
+    const url = `https://v1.apigames.id/v2/transaksi?ref_id=${refId}&merchant_id=${merchantId}&produk=${produk}&tujuan=${userId}&signature=${signature}&server_id=&tipe_pembayaran=${metode}`;
 
-    function generateRefId() {
-      return "DRAGON" + Date.now();
-    }
-
-    function prosesTopup() {
-      const userId = document.getElementById("user_id").value;
-      const produk = document.getElementById("diamond").value;
-      const metode = document.getElementById("metode").value;
-      const refId = generateRefId();
-      const serverId = "";
-
-      const signature = md5(`${merchantId}:${secretKey}:${refId}`);
-      const url = `https://v1.apigames.id/v2/transaksi?ref_id=${refId}&merchant_id=${merchantId}&produk=${produk}&tujuan=${userId}&signature=${signature}&server_id=${serverId}&tipe_pembayaran=${metode}`;
-
-      fetch(url)
-        .then(res => res.json())
-        .then(data => {
-          if (data.status === 1) {
-            const paymentLink = data.data?.url_payment || "#";
-            document.getElementById("status").innerHTML = `
-              <p>Transaksi berhasil dibuat.</p>
-              <p><b>Status:</b> ${data.data.message}</p>
-              <p><a href="${paymentLink}" target="_blank">Klik di sini untuk bayar</a></p>
-            `;
-          } else {
-            document.getElementById("status").innerText = "Top up gagal: " + data.error_msg;
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          alert("Gagal proses top up!");
-        });
-    }
-  </script>
-</body>
-</html>
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 1) {
+          document.getElementById("status").innerHTML = `
+            <p>Transaksi berhasil!</p>
+            <a href="${data.data.url_payment}" target="_blank">Klik untuk bayar</a>
+          `;
+        } else {
+          document.getElementById("status").innerText = "Top up gagal: " + data.error_msg;
+        }
+      })
+      .catch(() => alert("Gagal proses top up"));
+  }
+</script>
