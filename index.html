@@ -1,76 +1,122 @@
-<!DOCTYPE html><html lang="id">
+<!DOCTYPE html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Top Up ML - QRIS</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Top Up Free Fire</title>
   <style>
-    body { font-family: sans-serif; background: #f5f5f5; padding: 20px; }
-    .container { max-width: 400px; margin: auto; background: #fff; padding: 20px; border-radius: 10px; }
-    input, select, button { width: 100%; margin-top: 10px; padding: 10px; }
-    #qrisResult { margin-top: 20px; }
-    .hidden { display: none; }
-    img { width: 100%; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      padding: 20px;
+    }
+    .container {
+      max-width: 400px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    .diamond-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .diamond-btn {
+      flex: 1 1 45%;
+      padding: 10px;
+      text-align: center;
+      border: none;
+      border-radius: 8px;
+      background: #eee;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .diamond-btn.active {
+      background-color: #007bff;
+      color: white;
+    }
+    .pay-btn {
+      width: 100%;
+      padding: 12px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #qris-box {
+      margin-top: 20px;
+      display: none;
+      text-align: center;
+    }
+    #qris-box img {
+      width: 200px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Top Up Diamond ML</h1>
-    <form id="topupForm">
-      <label for="id">ID Game:</label>
-      <input type="text" id="id" placeholder="Otomatis terisi" readonly><label for="server">Server:</label>
-  <input type="text" id="server" required>
+    <h2>Top Up Free Fire</h2>
+    <input type="text" id="uid" placeholder="Masukkan ID Free Fire">
+    
+    <div class="diamond-options">
+      <button class="diamond-btn" data-price="22500" data-label="80 DM">80 DM - Rp 22.500</button>
+      <button class="diamond-btn" data-price="28000" data-label="100 DM">100 DM - Rp 28.000</button>
+      <button class="diamond-btn" data-price="41500" data-label="150 DM">150 DM - Rp 41.500</button>
+      <button class="diamond-btn" data-price="55000" data-label="200 DM">200 DM - Rp 55.000</button>
+    </div>
 
-  <label for="diamond">Pilih Diamond:</label>
-  <select id="diamond" required>
-    <option value="80">80 Diamond - Rp 22500</option>
-    <option value="100">100 Diamond - Rp 27000</option>
-    <option value="150">150 Diamond - Rp 40000</option>
-    <option value="200">200 Diamond - Rp 52000</option>
-  </select>
+    <button class="pay-btn" onclick="bayar()">Bayar Pakai QRIS</button>
 
-  <button type="submit">Bayar Pakai QRIS</button>
-</form>
+    <div id="qris-box">
+      <p>Scan QRIS untuk membayar:</p>
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=contoh-pembayaran" alt="QRIS">
+    </div>
+  </div>
 
-<div id="qrisResult" class="hidden">
-  <h3>Scan QRIS Berikut:</h3>
-  <img id="qrisImage" src="" alt="QRIS Code">
-  <p>Total: <span id="totalHarga"></span></p>
-</div>
+  <script>
+    let selectedBtn = null;
+    let selectedPrice = null;
+    let selectedLabel = null;
 
-  </div>  <script>
-    const idInput = document.getElementById('id');
-    const form = document.getElementById('topupForm');
-    const qrisImage = document.getElementById('qrisImage');
-    const qrisResult = document.getElementById('qrisResult');
-    const totalHarga = document.getElementById('totalHarga');
-
-    // Auto generate ID
-    const randomId = 'ML' + Math.floor(Math.random() * 1000000000);
-    idInput.value = randomId;
-
-    form.addEventListener('submit', async function (e) {
-      e.preventDefault();
-
-      const id = idInput.value;
-      const server = document.getElementById('server').value;
-      const diamond = document.getElementById('diamond').value;
-
-      // Harga mapping
-      const hargaMap = {
-        80: 22500,
-        100: 27000,
-        150: 40000,
-        200: 52000
-      };
-
-      const harga = hargaMap[diamond];
-      totalHarga.textContent = 'Rp ' + harga.toLocaleString('id-ID');
-
-      // Dummy QR image - Ganti pake API aslimu nanti
-      qrisImage.src = `https://api.qrserver.com/v1/create-qr-code/?data=TOPUP-${id}-${diamond}DM-${harga}&size=200x200`;
-
-      qrisResult.classList.remove('hidden');
+    const buttons = document.querySelectorAll('.diamond-btn');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        buttons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedPrice = btn.getAttribute('data-price');
+        selectedLabel = btn.getAttribute('data-label');
+      });
     });
-  </script></body>
+
+    function bayar() {
+      const uid = document.getElementById('uid').value.trim();
+      if (!uid) {
+        alert("ID Free Fire wajib diisi!");
+        return;
+      }
+      if (!selectedPrice) {
+        alert("Pilih jumlah diamond dulu!");
+        return;
+      }
+
+      // Tampilkan QRIS dummy
+      document.getElementById('qris-box').style.display = 'block';
+
+      // Ganti QR Code pakai API QRIS asli nanti
+      console.log(`Bayar ${selectedLabel} ke UID ${uid} seharga Rp${selectedPrice}`);
+    }
+  </script>
+</body>
 </html>
