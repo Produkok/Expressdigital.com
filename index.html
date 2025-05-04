@@ -1,206 +1,117 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Top Up FF QRIS</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Top Up Free Fire</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #eee; padding: 20px; }
-    .box { max-width: 420px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 8px rgba(0,0,0,0.1); }
-    h2 { text-align: center; }
-    input, select, button {
-      width: 100%; padding: 12px; margin-top: 10px;
-      border-radius: 8px; border: 1px solid #ccc;
-      font-size: 16px;
-    }
-    button { background-color: #28a745; color: white; cursor: pointer; border: none; }
-    .result { margin-top: 20px; text-align: center; }
-    img { margin-top: 10px; width: 200px; }
+    body { font-family: sans-serif; background: #f9f9f9; padding: 20px; }
+    .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    input, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 8px; border: 1px solid #ccc; }
+    button { background: #28a745; color: white; font-weight: bold; border: none; }
+    .nominal { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    .nominal button { flex: 1 1 45%; background: #eee; border: 1px solid #ccc; color: black; }
+    .nominal button.active { background: #007bff; color: white; }
+    #qris-container { margin-top: 20px; text-align: center; }
+    #status { margin-top: 10px; font-weight: bold; text-align: center; }
   </style>
 </head>
 <body>
-  <div class="box">
+  <div class="container">
     <h2>Top Up Free Fire</h2>
-    <input type="text" id="uid" placeholder="Masukkan ID FF">
-    <select id="diamond">
-      <option value="">Pilih Diamond</option>
-      <option value="22500">80 DM - Rp 22.500</option>
-      <option value="28000">100 DM - Rp 28.000</option>
-      <option value="41500">150 DM - Rp 41.500</option>
-      <option value="55000">200 DM - Rp 55.000</option>
-    </select>
-    <button onclick="bayar()">Bayar Pakai QRIS</button>
-    <div class="result" id="result"></div>
+    <input id="userId" placeholder="Masukkan ID Free Fire" oninput="cekAkun()">
+    <div id="username"></div>
+    <div class="nominal" id="nominalList"></div>
+    <button onclick="bayarQRIS()">Bayar Pakai QRIS</button>
+    <div id="qris-container"></div>
+    <div id="status"></div>
   </div>
 
   <script>
-    const MERCHANT_ID = "M250425XGOP9429XE";
-    const SECRET_KEY = "fedd3fbd4cdd2c4908c25118d1fb13afe3d0dfb255f27412dbd4139880e1ffde";
+    const merchantId = "M250425XGOP9429XE";
+    const secretKey = "fedd3fbd4cdd2c4908c25118d1fb13afe3d0dfb255f27412dbd4139880e1ffde";
+    const gameCode = "freefire";
+    const nominal = [
+      { label: "80 DM - Rp 22.500", value: 22500 },
+      { label: "100 DM - Rp 28.000", value: 28000 },
+      { label: "150 DM - Rp 41.500", value: 41500 },
+      { label: "200 DM - Rp 55.000", value: 55000 }
+    ];
 
-    function generateId() {
-      return 'TRX' + Date.now().toString().slice(-8) + Math.floor(Math.random() * 1000);
-    }
+    let selectedNominal = null;
 
-    async function bayar() {
-      const uid = document.getElementById("uid").value.trim();
-      const harga = document.getElementById("diamond").value;
-      const resultBox = document.getElementById("result");
-
-      if (!uid || !harga) {
-        alert("Isi semua data, Bew!");
-        return;
-      }
-
-      const trxId = generateId();
-      const bodyData = {
-        merchant_id: MERCHANT_ID,
-        amount: harga,
-        trx_id: trxId,
-        item_name: `TopUp FF UID: ${uid}`,
-        payment_method: "QRIS"
+    // Tampilkan pilihan nominal
+    const nominalContainer = document.getElementById("nominalList");
+    nominal.forEach((item, index) => {
+      const btn = document.createElement("button");
+      btn.textContent = item.label;
+      btn.onclick = () => {
+        document.querySelectorAll(".nominal button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        selectedNominal = item;
       };
+      nominalContainer.appendChild(btn);
+    });
 
-      const signature = await sha256(JSON.stringify(bodyData) + SECRET_KEY);
+    function md5(string) {
+      // Gunakan md5.js eksternal untuk generate signature atau pakai server
+      return ''; // Harus digenerate di server karena GitHub Pages tidak support md5 bawaan
+    }
 
-      try {
-        const res = await fetch("https://my.ipaymu.com/api/v2/payment/qris", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            signature: signature,
-            va: MERCHANT_ID
-          },
-          body: JSON.stringify(bodyData)
+    function cekAkun() {
+      const userId = document.getElementById("userId").value;
+      if (userId.length < 5) return;
+      const signature = md5(merchantId + secretKey);
+      fetch(`https://v1.apigames.id/merchant/${merchantId}/cek-username/${gameCode}?user_id=${userId}&signature=${signature}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("username").textContent = data.status === 1 && data.data.is_valid ? `Username: ${data.data.username}` : "ID tidak ditemukan!";
         });
-
-        const data = await res.json();
-
-        if (data.Data?.QrString) {
-          resultBox.innerHTML = `
-            <p>Scan QR berikut untuk bayar:</p>
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.Data.QrString)}">
-            <p>ID Transaksi: <b>${trxId}</b></p>
-            <p>Status: <b>Menunggu Pembayaran</b></p>
-          `;
-        } else {
-          resultBox.innerHTML = "<p style='color:red;'>Gagal generate QRIS, periksa kembali data API-nya.</p>";
-        }
-
-      } catch (err) {
-        console.error(err);
-        resultBox.innerHTML = "<p style='color:red;'>Gagal konek ke iPaymu!</p>";
-      }
     }
 
-    async function sha256(message) {
-      const msgBuffer = new TextEncoder().encode(message);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      return hashHex;
-    }
-  </script>
-</body>
-</html><!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Top Up FF QRIS</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #eee; padding: 20px; }
-    .box { max-width: 420px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 8px rgba(0,0,0,0.1); }
-    h2 { text-align: center; }
-    input, select, button {
-      width: 100%; padding: 12px; margin-top: 10px;
-      border-radius: 8px; border: 1px solid #ccc;
-      font-size: 16px;
-    }
-    button { background-color: #28a745; color: white; cursor: pointer; border: none; }
-    .result { margin-top: 20px; text-align: center; }
-    img { margin-top: 10px; width: 200px; }
-  </style>
-</head>
-<body>
-  <div class="box">
-    <h2>Top Up Free Fire</h2>
-    <input type="text" id="uid" placeholder="Masukkan ID FF">
-    <select id="diamond">
-      <option value="">Pilih Diamond</option>
-      <option value="22500">80 DM - Rp 22.500</option>
-      <option value="28000">100 DM - Rp 28.000</option>
-      <option value="41500">150 DM - Rp 41.500</option>
-      <option value="55000">200 DM - Rp 55.000</option>
-    </select>
-    <button onclick="bayar()">Bayar Pakai QRIS</button>
-    <div class="result" id="result"></div>
-  </div>
+    function bayarQRIS() {
+      const userId = document.getElementById("userId").value;
+      if (!selectedNominal || !userId) return alert("Lengkapi data terlebih dahulu!");
+      const invoice = Date.now().toString();
+      const signature = md5(merchantId + secretKey + invoice);
 
-  <script>
-    const MERCHANT_ID = "M250425XGOP9429XE";
-    const SECRET_KEY = "fedd3fbd4cdd2c4908c25118d1fb13afe3d0dfb255f27412dbd4139880e1ffde";
-
-    function generateId() {
-      return 'TRX' + Date.now().toString().slice(-8) + Math.floor(Math.random() * 1000);
-    }
-
-    async function bayar() {
-      const uid = document.getElementById("uid").value.trim();
-      const harga = document.getElementById("diamond").value;
-      const resultBox = document.getElementById("result");
-
-      if (!uid || !harga) {
-        alert("Isi semua data, Bew!");
-        return;
-      }
-
-      const trxId = generateId();
-      const bodyData = {
-        merchant_id: MERCHANT_ID,
-        amount: harga,
-        trx_id: trxId,
-        item_name: `TopUp FF UID: ${uid}`,
-        payment_method: "QRIS"
-      };
-
-      const signature = await sha256(JSON.stringify(bodyData) + SECRET_KEY);
-
-      try {
-        const res = await fetch("https://my.ipaymu.com/api/v2/payment/qris", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            signature: signature,
-            va: MERCHANT_ID
-          },
-          body: JSON.stringify(bodyData)
+      fetch("https://v1.apigames.id/transaction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          merchant_id: merchantId,
+          signature: signature,
+          invoice_id: invoice,
+          game_code: gameCode,
+          user_id: userId,
+          denom: selectedNominal.value,
+          payment_method: "qris"
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 1) {
+            document.getElementById("qris-container").innerHTML = `<img src="${data.data.qr_url}" width="200">`;
+            cekStatusPembayaran(invoice);
+          } else {
+            alert("Gagal buat QRIS: " + data.message);
+          }
         });
-
-        const data = await res.json();
-
-        if (data.Data?.QrString) {
-          resultBox.innerHTML = `
-            <p>Scan QR berikut untuk bayar:</p>
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.Data.QrString)}">
-            <p>ID Transaksi: <b>${trxId}</b></p>
-            <p>Status: <b>Menunggu Pembayaran</b></p>
-          `;
-        } else {
-          resultBox.innerHTML = "<p style='color:red;'>Gagal generate QRIS, periksa kembali data API-nya.</p>";
-        }
-
-      } catch (err) {
-        console.error(err);
-        resultBox.innerHTML = "<p style='color:red;'>Gagal konek ke iPaymu!</p>";
-      }
     }
 
-    async function sha256(message) {
-      const msgBuffer = new TextEncoder().encode(message);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      return hashHex;
+    function cekStatusPembayaran(invoice) {
+      setInterval(() => {
+        const signature = md5(merchantId + secretKey + invoice);
+        fetch(`https://v1.apigames.id/merchant/${merchantId}/status?invoice_id=${invoice}&signature=${signature}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 1 && data.data.payment_status === "success") {
+              document.getElementById("status").textContent = "Pembayaran BERHASIL!";
+            } else {
+              document.getElementById("status").textContent = "Menunggu pembayaran...";
+            }
+          });
+      }, 3000);
     }
   </script>
 </body>
