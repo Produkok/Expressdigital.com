@@ -1,31 +1,76 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="shortcut icon" href="assets/images/Express Digital.icon.ico" type="image/x-icon">
-    <title>Express Digital</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Top Up ML - QRIS</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { font-family: sans-serif; background: #f5f5f5; padding: 20px; }
+    .container { max-width: 400px; margin: auto; background: #fff; padding: 20px; border-radius: 10px; }
+    input, select, button { width: 100%; margin-top: 10px; padding: 10px; }
+    #qrisResult { margin-top: 20px; }
+    .hidden { display: none; }
+    img { width: 100%; }
+  </style>
 </head>
 <body>
-    <input type="search" id="search" placeholder="cari sesuatu...">
-    <h1>Populer</h1>
-    <div class="populer">
-        <a href="ml.html"><img src="assets/images/mobile-legends.webp" alt="card populer"></a>
-        <img src="assets/images/pubg-mobile.jpg" alt="card populer">
-        <img src="assets/images/freefire.png" alt="card populer">
-        <img src="assets/images/life.after.png" alt="card populer">
-    </div>
-    <h1>Games</h1>
-    <div class="games">
-        <a href="ml.html"><img src="assets/images/mobile-legends.webp" alt="card games"></a>
-        <img src="assets/images/pubg-mobile.jpg" alt="games">
-        <img src="assets/images/freefire.png" alt="card games">
-        <img src="assets/images/life.after.png" alt="card games">
-        <img src="assets/images/8-ball-pool.jpg" alt="card games">
-        <img src="assets/images/clash-of-clans.png" alt="card games">
-        <img src="assets/images/higgs_domino.jpg" alt="card games">
-        <img src="assets/images/Minecraft.jpg" alt="card games">
-    </div>
-</body>
+  <div class="container">
+    <h1>Top Up Diamond ML</h1>
+    <form id="topupForm">
+      <label for="id">ID Game:</label>
+      <input type="text" id="id" placeholder="Otomatis terisi" readonly><label for="server">Server:</label>
+  <input type="text" id="server" required>
+
+  <label for="diamond">Pilih Diamond:</label>
+  <select id="diamond" required>
+    <option value="80">80 Diamond - Rp 22500</option>
+    <option value="100">100 Diamond - Rp 27000</option>
+    <option value="150">150 Diamond - Rp 40000</option>
+    <option value="200">200 Diamond - Rp 52000</option>
+  </select>
+
+  <button type="submit">Bayar Pakai QRIS</button>
+</form>
+
+<div id="qrisResult" class="hidden">
+  <h3>Scan QRIS Berikut:</h3>
+  <img id="qrisImage" src="" alt="QRIS Code">
+  <p>Total: <span id="totalHarga"></span></p>
+</div>
+
+  </div>  <script>
+    const idInput = document.getElementById('id');
+    const form = document.getElementById('topupForm');
+    const qrisImage = document.getElementById('qrisImage');
+    const qrisResult = document.getElementById('qrisResult');
+    const totalHarga = document.getElementById('totalHarga');
+
+    // Auto generate ID
+    const randomId = 'ML' + Math.floor(Math.random() * 1000000000);
+    idInput.value = randomId;
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const id = idInput.value;
+      const server = document.getElementById('server').value;
+      const diamond = document.getElementById('diamond').value;
+
+      // Harga mapping
+      const hargaMap = {
+        80: 22500,
+        100: 27000,
+        150: 40000,
+        200: 52000
+      };
+
+      const harga = hargaMap[diamond];
+      totalHarga.textContent = 'Rp ' + harga.toLocaleString('id-ID');
+
+      // Dummy QR image - Ganti pake API aslimu nanti
+      qrisImage.src = `https://api.qrserver.com/v1/create-qr-code/?data=TOPUP-${id}-${diamond}DM-${harga}&size=200x200`;
+
+      qrisResult.classList.remove('hidden');
+    });
+  </script></body>
 </html>
