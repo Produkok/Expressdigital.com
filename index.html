@@ -68,8 +68,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
   <script>
-    const merchantId = "MASUKKAN_ID_MERCHANT_KAU"; // ganti punya kau
-    const secretKey = "MASUKKAN_SECRET_KEY_KAU";   // ganti juga ini
+    const merchantId = "M250425XGOP9429XE";
+    const secretKey = "fedd3fbd4cdd2c4908c25118d1fb13afe3d0dfb255f27412dbd4139880e1ffde";
 
     function md5(input) {
       return CryptoJS.MD5(input).toString();
@@ -106,7 +106,7 @@
       const produk = document.getElementById("diamond").value;
       const metode = document.getElementById("metode").value;
       const refId = generateRefId();
-      const serverId = ""; // Free Fire gak butuh server id
+      const serverId = "";
 
       const signature = md5(`${merchantId}:${secretKey}:${refId}`);
       const url = `https://v1.apigames.id/v2/transaksi?ref_id=${refId}&merchant_id=${merchantId}&produk=${produk}&tujuan=${userId}&signature=${signature}&server_id=${serverId}&tipe_pembayaran=${metode}`;
