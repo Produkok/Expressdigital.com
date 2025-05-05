@@ -3,34 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dragon.Store - Top Up Free Fire</title>
+  <title>Top Up Free Fire - Dragon.Store</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #1b1b1b; color: #fff; margin: 0; padding: 20px; }
-    .container { max-width: 500px; margin: auto; background: #2b2b2b; padding: 20px; border-radius: 10px; }
+    body { font-family: sans-serif; background: #1e1e1e; color: white; margin: 0; padding: 20px; }
+    .container { max-width: 480px; margin: auto; background: #2c2c2c; padding: 20px; border-radius: 10px; }
     input, select, button {
-      width: 100%; padding: 10px; margin: 10px 0; border: none; border-radius: 5px;
+      width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 6px;
     }
-    button { background: #ff5722; color: white; cursor: pointer; }
+    button { background: #ff5722; color: white; font-weight: bold; cursor: pointer; }
     button:hover { background: #e64a19; }
-    #qris-img { max-width: 100%; margin-top: 10px; }
+    #qris-img { max-width: 100%; margin-top: 10px; display: none; }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Top Up Free Fire</h2>
 
-    <label>ID Game</label>
-    <input type="text" id="user_id" placeholder="Masukkan ID Game FF" />
+    <label for="user_id">ID Game</label>
+    <input type="text" id="user_id" placeholder="Contoh: 123456789" />
 
-    <label>Zone ID</label>
-    <input type="text" id="zone_id" placeholder="Contoh: 1234" />
-
-    <label>Pilih Nominal</label>
+    <label for="product_select">Pilih Diamond</label>
     <select id="product_select">
       <option value="">Loading...</option>
     </select>
 
-    <label>Pilih Pembayaran</label>
+    <label for="payment_select">Pilih Pembayaran</label>
     <select id="payment_select">
       <option value="qris">QRIS</option>
       <option value="briva">BRIVA</option>
@@ -40,12 +37,19 @@
     <button onclick="topUp()">Top Up Sekarang</button>
 
     <div id="status"></div>
-    <img id="qris-img" style="display:none;" />
+    <img id="qris-img" />
   </div>
 
   <script>
     const merchant_id = "M250425XGOP9429XE";
     const secret_key = "fedd3fbd4cdd2c4908c25118d1fb13afe3d0dfb255f27412dbd4139880e1ffde";
+
+    async function generateSignature(input) {
+      const msgUint8 = new TextEncoder().encode(input);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+      return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, "0")).join("");
+    }
 
     async function fetchProduct() {
       const t = Math.floor(Date.now() / 1000);
@@ -55,7 +59,7 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          merchant_id, 
+          merchant_id,
           sign,
           time: t,
           product: "freefire"
@@ -66,29 +70,27 @@
       const select = document.getElementById("product_select");
       select.innerHTML = "";
 
-      data.data.forEach(p => {
-        let option = document.createElement("option");
-        option.value = p.product_code;
-        option.text = `${p.product_name} - Rp${p.price}`;
-        select.appendChild(option);
+      data.data.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.product_code;
+        opt.text = `${item.product_name} - Rp${item.price}`;
+        select.appendChild(opt);
       });
     }
 
-    async function generateSignature(input) {
-      const msgUint8 = new TextEncoder().encode(input);
-      const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
-      return Array.from(new Uint8Array(hashBuffer))
-        .map(b => b.toString(16).padStart(2, "0")).join("");
-    }
-
     async function topUp() {
-      const user_id = document.getElementById("user_id").value;
-      const zone_id = document.getElementById("zone_id").value;
+      const user_id = document.getElementById("user_id").value.trim();
       const product_code = document.getElementById("product_select").value;
       const payment = document.getElementById("payment_select").value;
       const time = Math.floor(Date.now() / 1000);
+      
+      if (!user_id || !product_code || !payment) {
+        alert("Isi semua data dengan benar bang");
+        return;
+      }
+
       const signature = await generateSignature(
-        merchant_id + user_id + zone_id + product_code + payment + time + secret_key
+        merchant_id + user_id + product_code + payment + time + secret_key
       );
 
       const res = await fetch("https://api.apigames.id/v2/transaksi", {
@@ -97,7 +99,6 @@
         body: JSON.stringify({
           merchant_id,
           user_id,
-          zone_id,
           product_code,
           payment_method: payment,
           sign: signature,
@@ -109,12 +110,14 @@
       const statusDiv = document.getElementById("status");
 
       if (json.status === 1) {
-        statusDiv.innerHTML = `<p><b>Status:</b> ${json.data.status}</p>
+        statusDiv.innerHTML = `
+          <p><b>Status:</b> ${json.data.status}</p>
           <p><b>Order ID:</b> ${json.data.trx_id}</p>
-          <p><b>Total Bayar:</b> Rp${json.data.amount}</p>`;
+          <p><b>Harga:</b> Rp${json.data.amount}</p>`;
         if (json.data.qr_url) {
-          document.getElementById("qris-img").src = json.data.qr_url;
-          document.getElementById("qris-img").style.display = "block";
+          const qrImg = document.getElementById("qris-img");
+          qrImg.src = json.data.qr_url;
+          qrImg.style.display = "block";
         }
       } else {
         statusDiv.innerHTML = `<p style="color:red;">Gagal: ${json.message}</p>`;
