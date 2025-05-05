@@ -3,121 +3,144 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Top Up Free Fire - Dragon.Store</title>
+  <title>Top Up FF Darurat</title>
+  <link rel="stylesheet" href="style.css" />
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background-color: #111;
-      color: #fff;
-      padding: 20px;
-    }
-    .container {
-      max-width: 500px;
-      margin: auto;
-      background-color: #222;
-      padding: 20px;
-      border-radius: 12px;
-    }
-    input, select, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 8px;
-      border: none;
-    }
-    button {
-      background-color: #03a9f4;
-      color: #fff;
-      font-weight: bold;
-      cursor: pointer;
-    }
+  font-family: sans-serif;
+  background: #121212;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+.container {
+  background: #1e1e1e;
+  padding: 20px;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 400px;
+}
+
+input, select, button {
+  width: 100%;
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+}
+
+button {
+  background-color: #f39c12;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#qrisArea img {
+  max-width: 100%;
+  margin-top: 15px;
+}
+
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Top Up Free Fire</h1>
+    <h1>🔥 Top Up Free Fire Darurat</h1>
 
-    <label for="user_id">Masukkan ID Akun:</label>
-    <input type="text" id="user_id" placeholder="Contoh: 123456789" />
+    <form id="topupForm">
+      <input type="text" id="userId" placeholder="Masukkan ID Free Fire" required />
+      <input type="text" id="zoneId" placeholder="Masukkan Server (Zone ID)" required />
 
-    <button onclick="cekAkun()">Cek Akun</button>
-    <div id="hasil_cek"></div>
+      <button type="button" onclick="cekAkun()">🔍 Cek Akun</button>
+      <div id="nicknameResult"></div>
 
-    <label for="diamond">Pilih Nominal Diamond:</label>
-    <select id="diamond">
-      <option value="ff5">5 Diamond</option>
-      <option value="ff12">12 Diamond</option>
-      <option value="ff70">70 Diamond</option>
-      <option value="ff140">140 Diamond</option>
-      <option value="ff355">355 Diamond</option>
-    </select>
+      <select id="nominal" required>
+        <option value="">Pilih Nominal</option>
+      </select>
 
-    <label for="metode">Pilih Metode Pembayaran:</label>
-    <select id="metode">
-      <option value="qris">QRIS</option>
-      <option value="briva">BRIVA</option>
-      <option value="bca">BCA</option>
-    </select>
+      <select id="metode" required>
+        <option value="">Metode Pembayaran</option>
+        <option value="qris">QRIS</option>
+        <option value="briva">BRIVA</option>
+        <option value="bca">BCA</option>
+      </select>
 
-    <button onclick="prosesTopup()">Bayar Sekarang</button>
+      <button type="submit">🚀 Top Up Sekarang</button>
+    </form>
 
-    <div id="status"></div>
+    <div id="qrisArea"></div>
   </div>
-<script>
-  const merchantId = "M250425XGOP9429XE";
-  const secretKey = "fedd3fbd4cdd2c4908c25118d1fb13afe3d0dfb255f27412dbd4139880e1ffde";
 
-  const produkMap = {
-    "ff5": "FRE-FIRE5",
-    "ff12": "FRE-FIRE12",
-    "ff70": "FRE-FIRE70",
-    "ff140": "FRE-FIRE140",
-    "ff355": "FRE-FIRE355"
+  <script>
+    const apikey = 'APIKEY_KAU_DI_APIGAMES'; // ganti ini
+
+async function cekAkun() {
+  const userId = document.getElementById('userId').value;
+  const zoneId = document.getElementById('zoneId').value;
+
+  const url = `https://api.apigames.id/v1/cek-username/freefire?apikey=${apikey}&user_id=${userId}&zone_id=${zoneId}`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  const nicknameResult = document.getElementById('nicknameResult');
+  if (data && data.data && data.data.username) {
+    nicknameResult.innerText = `👤 Nickname: ${data.data.username}`;
+    loadProduk();
+  } else {
+    nicknameResult.innerText = "❌ Gagal cek akun!";
+  }
+}
+
+async function loadProduk() {
+  const url = `https://api.apigames.id/v1/produk/game/freefire?apikey=${apikey}`;
+  const res = await fetch(url);
+  const data = await res.json();
+
+  const nominalSelect = document.getElementById('nominal');
+  nominalSelect.innerHTML = '<option value="">Pilih Nominal</option>';
+
+  data.data.forEach(item => {
+    nominalSelect.innerHTML += `<option value="${item.item_code}">${item.nama} - Rp${item.price}</option>`;
+  });
+}
+
+document.getElementById('topupForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const userId = document.getElementById('userId').value;
+  const zoneId = document.getElementById('zoneId').value;
+  const item = document.getElementById('nominal').value;
+  const metode = document.getElementById('metode').value;
+
+  const body = {
+    user_id: userId,
+    zone_id: zoneId,
+    item_code: item,
+    payment_method: metode,
+    username: "bebas",
+    inquiry: true
   };
 
-  function md5(input) {
-    return CryptoJS.MD5(input).toString();
+  const res = await fetch("https://api.apigames.id/v1/order", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apikey}`
+    },
+    body: JSON.stringify(body)
+  });
+
+  const data = await res.json();
+  if (data && data.data && data.data.qr_url) {
+    document.getElementById('qrisArea').innerHTML = `<p>Scan QR untuk bayar:</p><img src="${data.data.qr_url}" />`;
+  } else {
+    document.getElementById('qrisArea').innerText = "❌ Gagal buat order.";
   }
+});
 
-  function cekAkun() {
-    const userId = document.getElementById("user_id").value;
-    const signature = md5(merchantId + secretKey);
-    const url = `https://v1.apigames.id/merchant/${merchantId}/cek-username/freefire?user_id=${userId}&signature=${signature}`;
-
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        if (data?.data?.is_valid) {
-          document.getElementById("hasil_cek").innerText = "Username: " + data.data.username;
-        } else {
-          document.getElementById("hasil_cek").innerText = "Akun tidak ditemukan!";
-        }
-      })
-      .catch(() => alert("Gagal cek akun"));
-  }
-
-  function prosesTopup() {
-    const userId = document.getElementById("user_id").value;
-    const diamond = document.getElementById("diamond").value;
-    const metode = document.getElementById("metode").value;
-    const refId = "DRAGON" + Date.now();
-    const produk = produkMap[diamond];
-
-    const signature = md5(`${merchantId}:${secretKey}:${refId}`);
-    const url = `https://v1.apigames.id/v2/transaksi?ref_id=${refId}&merchant_id=${merchantId}&produk=${produk}&tujuan=${userId}&signature=${signature}&server_id=&tipe_pembayaran=${metode}`;
-
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === 1) {
-          document.getElementById("status").innerHTML = `
-            <p>Transaksi berhasil!</p>
-            <a href="${data.data.url_payment}" target="_blank">Klik untuk bayar</a>
-          `;
-        } else {
-          document.getElementById("status").innerText = "Top up gagal: " + data.error_msg;
-        }
-      })
-      .catch(() => alert("Gagal proses top up"));
-  }
-</script>
+  </script>
+</body>
+</html>
