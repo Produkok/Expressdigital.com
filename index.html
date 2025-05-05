@@ -87,7 +87,7 @@
       const product = document.getElementById("product").value;
       const payment = document.getElementById("payment").value;
       const refId = `REF${Date.now()}`;
-      const signature = md5(merchantId + userId + product + refId + secretKey);
+      const signature = md5(merchantId + product + userId + refId + secretKey);
 
       if (!userId || !product || !payment) {
         alert("Isi semua data dengan lengkap bang!");
